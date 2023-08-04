@@ -1,0 +1,27 @@
+﻿<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             xmlns:esri="http://schemas.esri.com/arcgis/runtime/2013"
+             x:Class="BikeRentalStations.MainPage"
+             Title="Bike rental stations">
+
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition/>
+            <RowDefinition Height="70"/>
+        </Grid.RowDefinitions>
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition/>
+            <ColumnDefinition/>
+        </Grid.ColumnDefinitions>
+        <esri:MapView x:Name="mapView" 
+                      Grid.Row="0" Grid.Column="0" Grid.ColumnSpan="2"
+                      Map="{Binding Map}"
+                      GeoViewTapped="MapViewTapped"/>
+        <Picker x:Name="CityPicker" Grid.Row="1" Grid.Column="0" Grid.ColumnSpan="2"
+                HorizontalOptions="CenterAndExpand" VerticalOptions="CenterAndExpand"
+                Title="Select a city"
+                ItemsSource="{Binding CityList}"
+                SelectedIndexChanged="CityPicker_SelectedIndexChanged"/>
+    </Grid>
+</ContentPage>
