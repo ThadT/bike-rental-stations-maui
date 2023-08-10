@@ -35,7 +35,7 @@ public static class MauiProgram
                 fonts.AddFont("OpenSans-Semibold.ttf", "OpenSansSemibold");
             })
             .UseArcGISRuntime(config => config
-                .UseApiKey("YOUR_API_KEY")
+                .UseApiKey("AAPK62e1ae3b6fa143ffaa94ba78647fa565gA-kFxgD-rusPkfqGpKbpD3YiN_0YkL_lq5bmt7PpxO_Eu4K2QgZM5D0xsGxlLQN")
                 .ConfigureAuthentication(auth => auth
                 .UseDefaultChallengeHandler() // Use the default authentication dialog
               )

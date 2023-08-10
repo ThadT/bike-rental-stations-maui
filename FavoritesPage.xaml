@@ -5,7 +5,7 @@
              Title="Favorites">
     <VerticalStackLayout>
         <CollectionView x:Name="FavoritesList"
-                        ItemsSource="{Binding FavoriteBikeStations.Values}">
+                        ItemsSource="{Binding FavoriteList}">
             <CollectionView.ItemTemplate>
                 <DataTemplate>
                     <Grid Padding="10">

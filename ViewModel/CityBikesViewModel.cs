@@ -27,8 +27,10 @@ public partial class CityBikesViewModel: ObservableObject
     [ObservableProperty]
     private int _updateIntervalSeconds = 10;
 
-    [ObservableProperty]
     private Dictionary<long, Favorite> _favoriteBikeStations = new();
+
+    [ObservableProperty]
+    private List<Favorite> _favoriteList = new();
 
     private Dictionary<string, Tuple<string, MapPoint>> _cityBikeStations;
 
@@ -45,10 +47,10 @@ public partial class CityBikesViewModel: ObservableObject
             {"Washington DC", new Tuple<string, MapPoint>("https://api.citybik.es/v2/networks/capital-bikeshare", new MapPoint(-77.0369, 38.9072, SpatialReferences.Wgs84))}
         };
 
-        CityList = _cityBikeStations.Keys.ToList();
+        _cityList = _cityBikeStations.Keys.ToList();
 
         // Create a new map with a dark navigation basemap.
-        Map = new Esri.ArcGISRuntime.Mapping.Map(BasemapStyle.ArcGISNavigationNight);
+        _map = new Esri.ArcGISRuntime.Mapping.Map(BasemapStyle.ArcGISNavigationNight);
     }
 
     public async Task<Viewpoint> ShowBikeStations(string cityName)
@@ -65,7 +67,7 @@ public partial class CityBikesViewModel: ObservableObject
         }
 
         // Create an instance of the custom dynamic entity data source
-        _cityBikesDataSource = new CityBikesDataSource(cityBikesUrl, UpdateIntervalSeconds);
+        _cityBikesDataSource = new CityBikesDataSource(cityBikesUrl, _updateIntervalSeconds);
         _cityBikesDataSource.DynamicEntityReceived += (s, e) =>
         {
             var entity = e.DynamicEntity;
@@ -84,7 +86,7 @@ public partial class CityBikesViewModel: ObservableObject
         //};
 
         // Remove the existing dynamic entity layer from the map.
-        Map.OperationalLayers.Remove(_dynamicEntityLayer);
+        _map.OperationalLayers.Remove(_dynamicEntityLayer);
         _dynamicEntityLayer = null;
 
         // Create a new DynamicEntityLayer with the new CityBikesDataSource and add it to the map.
@@ -92,7 +94,7 @@ public partial class CityBikesViewModel: ObservableObject
         {
             Renderer = CreateBikeStationsRenderer()
         };
-        Map.OperationalLayers.Add(_dynamicEntityLayer);
+        _map.OperationalLayers.Add(_dynamicEntityLayer);
 
         // Return a viewpoint for the city location.
         return new Viewpoint(cityLocation, 130000);
@@ -134,7 +136,7 @@ public partial class CityBikesViewModel: ObservableObject
         var availableEBikes = bikeStation.Attributes["EBikesAvailable"].ToString();
         var calloutDef = new CalloutDefinition(stationName, 
                              $"Bikes available: {availableBikes} ({availableEBikes} electric)");
-        calloutDef.ButtonImage = FavoriteBikeStations.ContainsKey(dynEntity.EntityId) ? 
+        calloutDef.ButtonImage = _favoriteBikeStations.ContainsKey(dynEntity.EntityId) ? 
                                        new RuntimeImage(new Uri(favoriteIconUrl)) : 
                                        new RuntimeImage(new Uri(nonFavIconUrl));
         calloutDef.Tag = dynEntity;
@@ -142,21 +144,26 @@ public partial class CityBikesViewModel: ObservableObject
         return calloutDef;
     }
 
-    public bool CheckIsFavorite(DynamicEntity station, string city)
+    public bool ToggleIsFavorite(DynamicEntity station, string city)
     {
-        if (FavoriteBikeStations.ContainsKey(station.EntityId))
+        var isFavorite = _favoriteBikeStations.ContainsKey(station.EntityId);
+        if (isFavorite)
         {
-            FavoriteBikeStations.Remove(station.EntityId);
-            //dynEntity.DynamicEntityChanged -= DynEntity_DynamicEntityChanged;            
-            return false;
+           _favoriteBikeStations.Remove(station.EntityId);
+            isFavorite = false;
+           //dynEntity.DynamicEntityChanged -= DynEntity_DynamicEntityChanged;            
         }
         else
         {
             var favorite = new Favorite(city, station);
-            FavoriteBikeStations.Add(station.EntityId, favorite);
+            _favoriteBikeStations.Add(station.EntityId, favorite);
+            isFavorite = true;
             //dynEntity.DynamicEntityChanged += DynEntity_DynamicEntityChanged;
-            return true;
         }
+
+        FavoriteList = _favoriteBikeStations.Values.ToList();
+
+        return isFavorite;
     }
 
     //private void DynEntity_DynamicEntityChanged(object sender, DynamicEntityChangedEventArgs e)
