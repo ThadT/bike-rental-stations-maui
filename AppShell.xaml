@@ -8,7 +8,7 @@
 
     <TabBar>
         <ShellContent
-            Title="Home"
+            Title="Map"
             ContentTemplate="{DataTemplate local:MainPage}"
             Route="MainPage" />
         <ShellContent

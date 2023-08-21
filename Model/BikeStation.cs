@@ -12,7 +12,7 @@ public class BikeStation
     public string StationName { get; set; }
 
     [JsonPropertyName("timestamp")]
-    public DateTime TimeStamp { get; set; }
+    public string TimeStamp { get; set; }
 
     [JsonPropertyName("longitude")]
     public double Longitude { get; set; }

@@ -5,11 +5,48 @@
              Title="Favorites">
     <VerticalStackLayout>
         <CollectionView x:Name="FavoritesList"
+                        SelectionMode="Single"
+                        HeightRequest="300"
                         ItemsSource="{Binding FavoriteList}">
             <CollectionView.ItemTemplate>
                 <DataTemplate>
                     <Grid Padding="10">
-                        <Label Text="{Binding Name}"/>
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto" />
+                            <RowDefinition Height="Auto" />
+                            <RowDefinition Height="Auto" />
+                            <RowDefinition Height="Auto" />
+                        </Grid.RowDefinitions>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="Auto" />
+                            <ColumnDefinition Width="200" />
+                            <ColumnDefinition Width="Auto" />
+                        </Grid.ColumnDefinitions>
+                        <Image Grid.Row="1" Grid.RowSpan="3"
+                               Source="{Binding ImageUrl}"
+                               Margin="0,-22,0,0"
+                               Aspect="AspectFill"
+                               HeightRequest="50"
+                               WidthRequest="50" />
+                        <Button Grid.Column="0" Grid.ColumnSpan="3"
+                               Text="{Binding Name}"
+                               MinimumWidthRequest="300"
+                               FontAttributes="Bold"
+                                Clicked="StationClicked"/>
+                        <Label Grid.Row="1" Grid.Column="1" Grid.ColumnSpan="2"
+                               Margin="20,2"
+                               Text="{Binding AvailableBikes, StringFormat='Bikes:     {0}'}" />
+                        <Label Grid.Row="2" Grid.Column="1" Grid.ColumnSpan="2" 
+                               Margin="20,2"
+                               Text="{Binding AvailableEBikes, StringFormat='E-Bikes:  {0}'}" />
+                        <Label Grid.Row="3" Grid.Column="0" Grid.ColumnSpan="2" 
+                               Margin="2,7"
+                               Text="{Binding LastUpdated, StringFormat = 'Updated {0:h:mm:ss tt}'}"
+                               FontAttributes="Italic" />
+                        <Label Grid.Row="3" Grid.Column="2" 
+                               Margin="2,7"
+                               Text="{Binding InventoryChange, StringFormat='Change: {0}'}"
+                               FontAttributes="Bold" />
                     </Grid>
                 </DataTemplate>
             </CollectionView.ItemTemplate>

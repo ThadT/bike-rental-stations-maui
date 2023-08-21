@@ -8,23 +8,15 @@ namespace BikeRentalStations;
 
 internal class CityBikesDataSource : DynamicEntityDataSource
 {
-    private IDispatcherTimer _checkBikesTimer = Application.Current.Dispatcher.CreateTimer();
-    private string _cityBikesUrl;
-    private HttpClient _client;
-    private JsonSerializerOptions _serializerOptions;
-    private Dictionary<string, Dictionary<string, object>> _latestObservations = new();
+    private readonly IDispatcherTimer _checkBikesTimer = Application.Current.Dispatcher.CreateTimer();
+    private readonly string _cityBikesUrl;
+    private readonly Dictionary<string, Dictionary<string, object>> _latestObservations = new();
 
     public CityBikesDataSource(string cityBikesUrl, int updateIntervalSeconds)
     {
         _checkBikesTimer.Interval = TimeSpan.FromSeconds(updateIntervalSeconds);
-        _checkBikesTimer.Tick += (s, e) => PullBikeUpdates();
         _cityBikesUrl = cityBikesUrl;
-
-        _client = new HttpClient();
-        _serializerOptions = new JsonSerializerOptions
-        {
-            IncludeFields = true
-        };
+        _checkBikesTimer.Tick += (s, e) => { PullBikeUpdates(); };
     }
 
     protected override Task OnConnectAsync(CancellationToken cancellationToken)
@@ -41,6 +33,7 @@ internal class CityBikesDataSource : DynamicEntityDataSource
     protected override Task OnDisconnectAsync()
     {
         _checkBikesTimer.Stop();
+        _latestObservations.Clear();
 
         return Task.CompletedTask;
     }
@@ -51,7 +44,21 @@ internal class CityBikesDataSource : DynamicEntityDataSource
         // - A schema (fields) for the entities (bike stations) and their obserations
         // - Which field uniquely identifies entities (StationID)
         // - The spatial reference for the station locations (WGS84)
-        var fields = GetCityBikeFields();
+        var fields = new List<Field>
+        {
+            new Field(FieldType.Text, "StationID", "", 50),
+            new Field(FieldType.Text, "StationName", "", 125),
+            new Field(FieldType.Text, "Address", "", 125),
+            new Field(FieldType.Text, "TimeStamp", "", 50),
+            new Field(FieldType.Float32, "Longitude", "", 0),
+            new Field(FieldType.Float32, "Latitude", "", 0),
+            new Field(FieldType.Int32, "BikesAvailable", "", 0),
+            new Field(FieldType.Int32, "EBikesAvailable", "", 0),
+            new Field(FieldType.Int32, "EmptySlots", "", 0),
+            new Field(FieldType.Text, "ObservationID", "", 50),
+            new Field(FieldType.Int32, "InventoryChange", "", 0),
+            new Field(FieldType.Text, "ImageUrl", "", 255)
+        };
         var info = new DynamicEntityDataSourceInfo("StationID", fields)
         {
             SpatialReference = SpatialReferences.Wgs84
@@ -60,32 +67,14 @@ internal class CityBikesDataSource : DynamicEntityDataSource
         return Task.FromResult(info);
     }
 
-    private List<Field> GetCityBikeFields()
-    {
-        var fields = new List<Field>
-        {
-            new Field(FieldType.Text, "StationID", "", 50),
-            new Field(FieldType.Text, "StationName", "", 125),
-            new Field(FieldType.Text, "Address", "", 125),
-            new Field(FieldType.Date, "TimeStamp", "", 0),
-            new Field(FieldType.Float32, "Longitude", "", 0),
-            new Field(FieldType.Float32, "Latitude", "", 0),
-            new Field(FieldType.Int32, "BikesAvailable", "", 0),
-            new Field(FieldType.Int32, "EBikesAvailable", "", 0),
-            new Field(FieldType.Int32, "EmptySlots", "", 0),
-            new Field(FieldType.Text, "ObservationID", "", 50)
-        };
-
-        return fields;
-    }
-
     private async void PullBikeUpdates()
     {
         if (this.ConnectionStatus == ConnectionStatus.Disconnected) { return; }
 
         try
         {
-            HttpResponseMessage response = await _client.GetAsync(new Uri(_cityBikesUrl));
+            var client = new HttpClient();
+            HttpResponseMessage response = await client.GetAsync(new Uri(_cityBikesUrl));
             if (response.IsSuccessStatusCode)
             {
                 // Get a response with the JSON for this bike network (including all stations).
@@ -94,8 +83,10 @@ internal class CityBikesDataSource : DynamicEntityDataSource
                 // Get the "stations" portion of the JSON and deserialize the list of stations.
                 var stationsStartPos = cityBikeJson.IndexOf(@"""stations"":[") + 11;
                 var stationsEndPos = cityBikeJson.LastIndexOf(@"]") + 1;
-                var stationsJson = cityBikeJson.Substring(stationsStartPos, stationsEndPos - stationsStartPos);
-                var observations = JsonSerializer.Deserialize<List<BikeStation>>(stationsJson, _serializerOptions);
+                var stationsJson = cityBikeJson[stationsStartPos..stationsEndPos];
+                var observations = JsonSerializer.Deserialize<List<BikeStation>>(stationsJson);
+
+                var totalInventoryChange = 0;
                 foreach (var observation in observations)
                 {
                     var attributes = new Dictionary<string, object>
@@ -109,7 +100,9 @@ internal class CityBikesDataSource : DynamicEntityDataSource
                         { "BikesAvailable", observation.BikesAvailable },
                         { "EBikesAvailable", observation.StationInfo.EBikesAvailable },
                         { "EmptySlots", observation.EmptySlots },
-                        { "ObservationID", observation.ObservationID }
+                        { "ObservationID", observation.ObservationID },
+                        { "InventoryChange", 0 },
+                        { "ImageUrl", "https://static.arcgis.com/images/Symbols/Transportation/esriDefaultMarker_189.png" }
                     };
                     var location = new MapPoint(observation.Longitude, observation.Latitude, SpatialReferences.Wgs84);
 
@@ -120,6 +113,11 @@ internal class CityBikesDataSource : DynamicEntityDataSource
                         if ((int)attributes["BikesAvailable"] != (int)lastObservation["BikesAvailable"] ||
                                                            (int)attributes["EBikesAvailable"] != (int)lastObservation["EBikesAvailable"])
                         {
+                            // Calculate the change in inventory.
+                            var stationInventoryChange = (int)attributes["BikesAvailable"] - (int)lastObservation["BikesAvailable"];
+                            attributes["InventoryChange"] = stationInventoryChange;
+                            totalInventoryChange += stationInventoryChange;
+
                             // Add the observation to the data source.
                             AddObservation(location, attributes);
                         }
@@ -134,6 +132,8 @@ internal class CityBikesDataSource : DynamicEntityDataSource
                         AddObservation(location, attributes);
                     }
                 }
+
+                Debug.WriteLine($"Total inventory change: {totalInventoryChange}");
             }
         }
         catch (Exception ex)
