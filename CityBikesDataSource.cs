@@ -16,16 +16,16 @@ internal class CityBikesDataSource : DynamicEntityDataSource
     {
         _checkBikesTimer.Interval = TimeSpan.FromSeconds(updateIntervalSeconds);
         _cityBikesUrl = cityBikesUrl;
-        _checkBikesTimer.Tick += (s, e) => { PullBikeUpdates(); };
+        _checkBikesTimer.Tick += (s, e) => PullBikeUpdates();
     }
 
     protected override Task OnConnectAsync(CancellationToken cancellationToken)
     {
-        // Get the initial set of bike stations.
-        PullBikeUpdates();
-
         // Start the timer to pull updates periodically.
         _checkBikesTimer.Start();
+        
+        // Get the initial set of bike stations.
+        PullBikeUpdates();
 
         return Task.CompletedTask;
     }
@@ -41,7 +41,7 @@ internal class CityBikesDataSource : DynamicEntityDataSource
     protected override Task<DynamicEntityDataSourceInfo> OnLoadAsync()
     {
         // When the data source is loaded, create metadata that defines:
-        // - A schema (fields) for the entities (bike stations) and their obserations
+        // - A schema (fields) for the entities (bike stations) and their observations
         // - Which field uniquely identifies entities (StationID)
         // - The spatial reference for the station locations (WGS84)
         var fields = new List<Field>
@@ -84,51 +84,51 @@ internal class CityBikesDataSource : DynamicEntityDataSource
                 var stationsStartPos = cityBikeJson.IndexOf(@"""stations"":[") + 11;
                 var stationsEndPos = cityBikeJson.LastIndexOf(@"]") + 1;
                 var stationsJson = cityBikeJson[stationsStartPos..stationsEndPos];
-                var observations = JsonSerializer.Deserialize<List<BikeStation>>(stationsJson);
+                var bikeUpdates = JsonSerializer.Deserialize<List<BikeStation>>(stationsJson);
 
                 var totalInventoryChange = 0;
-                foreach (var observation in observations)
+                foreach (var update in bikeUpdates)
                 {
                     var attributes = new Dictionary<string, object>
                     {
-                        { "StationID", observation.StationInfo.StationID },
-                        { "StationName", observation.StationName },
-                        { "Address", observation.StationInfo.Address },
-                        { "TimeStamp", observation.TimeStamp },
-                        { "Longitude", observation.Longitude },
-                        { "Latitude", observation.Latitude },
-                        { "BikesAvailable", observation.BikesAvailable },
-                        { "EBikesAvailable", observation.StationInfo.EBikesAvailable },
-                        { "EmptySlots", observation.EmptySlots },
-                        { "ObservationID", observation.ObservationID },
+                        { "StationID", update.StationInfo.StationID },
+                        { "StationName", update.StationName },
+                        { "Address", update.StationInfo.Address },
+                        { "TimeStamp", update.TimeStamp },
+                        { "Longitude", update.Longitude },
+                        { "Latitude", update.Latitude },
+                        { "BikesAvailable", update.BikesAvailable },
+                        { "EBikesAvailable", update.StationInfo.EBikesAvailable },
+                        { "EmptySlots", update.EmptySlots },
+                        { "ObservationID", update.ObservationID },
                         { "InventoryChange", 0 },
                         { "ImageUrl", "https://static.arcgis.com/images/Symbols/Transportation/esriDefaultMarker_189.png" }
                     };
-                    var location = new MapPoint(observation.Longitude, observation.Latitude, SpatialReferences.Wgs84);
+                    var location = new MapPoint(update.Longitude, update.Latitude, SpatialReferences.Wgs84);
 
                     _latestObservations.TryGetValue(attributes["StationID"].ToString(), out Dictionary<string, object> lastObservation);
                     if (lastObservation is not null)
                     {
-                        // Check if the new observation has different values for BikesAvailable or EBikesAvailable.
+                        // Check if the new update has different values for BikesAvailable or EBikesAvailable.
                         if ((int)attributes["BikesAvailable"] != (int)lastObservation["BikesAvailable"] ||
-                                                           (int)attributes["EBikesAvailable"] != (int)lastObservation["EBikesAvailable"])
+                            (int)attributes["EBikesAvailable"] != (int)lastObservation["EBikesAvailable"])
                         {
                             // Calculate the change in inventory.
                             var stationInventoryChange = (int)attributes["BikesAvailable"] - (int)lastObservation["BikesAvailable"];
                             attributes["InventoryChange"] = stationInventoryChange;
                             totalInventoryChange += stationInventoryChange;
 
-                            // Add the observation to the data source.
+                            // Add the update to the data source.
                             AddObservation(location, attributes);
                         }
 
-                        // Update the latest observation for this station.
+                        // Update the latest update for this station.
                         _latestObservations[attributes["StationID"].ToString()] = attributes;
                     } 
                     else
                     {
                         _latestObservations.Add(attributes["StationID"].ToString(), attributes);
-                        // Add the observation to the data source.
+                        // Add the update to the data source.
                         AddObservation(location, attributes);
                     }
                 }
