@@ -1,6 +1,6 @@
 ﻿using Foundation;
 
-namespace BikeRentalStations;
+namespace BikeAvailability;
 
 [Register("AppDelegate")]
 public class AppDelegate : MauiUIApplicationDelegate

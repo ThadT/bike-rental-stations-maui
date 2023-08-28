@@ -2,16 +2,9 @@
 using Esri.ArcGISRuntime.RealTime;
 using System.ComponentModel;
 
-namespace BikeRentalStations;
+namespace BikeAvailability;
 
-// Create a class called Favorite that has the following properties:
-// - Name (string)
-// - Location (MapPoint)
-// - CityName (string)
-// - AvailableBikes (int)
-// - AvailableEBikes (int)
-// Make the class public and add a default constructor that sets the properties to default values.
-// Add a constructor that takes a DynamicEntity as a parameter and sets the properties based on the DynamicEntity.
+// A class to represent favorite bike stations.
 public class Favorite: INotifyPropertyChanged
 {
     public string StationId { get; set; }

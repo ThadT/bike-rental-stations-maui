@@ -1,4 +1,4 @@
-﻿namespace BikeRentalStations;
+﻿namespace BikeAvailability;
 
 public partial class AppShell : Shell
 {

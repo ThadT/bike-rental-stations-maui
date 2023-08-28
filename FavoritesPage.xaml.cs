@@ -1,6 +1,6 @@
-using BikeRentalStations.ViewModel;
+using BikeAvailability.ViewModel;
 
-namespace BikeRentalStations;
+namespace BikeAvailability;
 
 public partial class FavoritesPage : ContentPage
 {
@@ -10,6 +10,7 @@ public partial class FavoritesPage : ContentPage
         BindingContext = vm;
 	}
 
+    // Navigate to the map page to show a selected favorite station.
     private async void StationClicked(object sender, EventArgs e)
     {
         var stationButton = sender as Button;

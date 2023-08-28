@@ -5,11 +5,13 @@ using Esri.ArcGISRuntime.RealTime;
 using Esri.ArcGISRuntime.Symbology;
 using Esri.ArcGISRuntime.UI;
 
-namespace BikeRentalStations.ViewModel;
+namespace BikeAvailability.ViewModel;
 
 public partial class CityBikesViewModel: ObservableObject
 {
+    // A custom DynamicEntityDataSource for showing bike rental stations.
     private CityBikesDataSource _cityBikesDataSource;
+    // A DynamicEntityLayer to handle display of dynamic entities from the data source.
     private DynamicEntityLayer _dynamicEntityLayer;
 
     public CityBikesViewModel()
@@ -24,7 +26,7 @@ public partial class CityBikesViewModel: ObservableObject
     private List<string> _cityList;
 
     [ObservableProperty]
-    private int _updateIntervalSeconds = 300;
+    private int _updateIntervalSeconds = 300; // data are updated every 5 minutes.
 
     private readonly Dictionary<long, Favorite> _favoriteBikeStations = new();
 
@@ -37,6 +39,7 @@ public partial class CityBikesViewModel: ObservableObject
 
     private void Init()
     {
+        // A list of available cities to show in the app, along with their location and REST endpoint URL.
         _cityBikeStations = new Dictionary<string, Tuple<string, MapPoint>>
         {
             {"Milan", new Tuple<string, MapPoint>("https://api.citybik.es/v2/networks/bikemi", new MapPoint(9.1865, 45.4654, SpatialReferences.Wgs84))},
@@ -48,6 +51,7 @@ public partial class CityBikesViewModel: ObservableObject
             {"Washington DC", new Tuple<string, MapPoint>("https://api.citybik.es/v2/networks/capital-bikeshare", new MapPoint(-77.0369, 38.9072, SpatialReferences.Wgs84))}
         };
 
+        // Show the city names as a list in the dropdown.
         CityList = _cityBikeStations.Keys.ToList();
 
         // Create a new map with a dark navigation basemap.
@@ -56,6 +60,7 @@ public partial class CityBikesViewModel: ObservableObject
 
     public async Task<Viewpoint> ShowBikeStations(string cityName)
     {
+        // Get the city's REST URL and location (map point).
         var cityInfo = _cityBikeStations[cityName];
         var cityBikesUrl = cityInfo.Item1;
         var cityLocation = cityInfo.Item2;
@@ -67,7 +72,7 @@ public partial class CityBikesViewModel: ObservableObject
             _cityBikesDataSource = null;
         }
 
-        // Create an instance of the custom dynamic entity data source
+        // Create an instance of the custom dynamic entity data source with the URL and interval.
         _cityBikesDataSource = new CityBikesDataSource(cityBikesUrl, UpdateIntervalSeconds);
         
         // Remove the existing dynamic entity layer from the map.
@@ -184,6 +189,7 @@ public partial class CityBikesViewModel: ObservableObject
 
     private void DynEntity_DynamicEntityChanged(object sender, DynamicEntityChangedEventArgs e)
     {
+        // If an observation comes in for a favorite bike station, update it's attributes for display in the list.
         var newObs = e.ReceivedObservation;
         if (newObs == null) { return; }
 

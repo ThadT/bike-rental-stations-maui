@@ -1,7 +1,7 @@
 ﻿using Android.App;
 using Android.Runtime;
 
-namespace BikeRentalStations;
+namespace BikeAvailability;
 
 [Application]
 public class MainApplication : MauiApplication

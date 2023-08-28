@@ -1,6 +1,6 @@
 ﻿using System.Text.Json.Serialization;
 
-namespace BikeRentalStations;
+namespace BikeAvailability;
 
 // A class to represent a bike station returned from a CityBikes API JSON response.
 public class BikeStation

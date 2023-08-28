@@ -2,8 +2,8 @@
 <ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
              xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
              xmlns:esri="http://schemas.esri.com/arcgis/runtime/2013"
-             x:Class="BikeRentalStations.MainPage"
-             Title="Bike rental stations">
+             x:Class="BikeAvailability.MainPage"
+             Title="Bike availability">
 
     <Grid>
         <Grid.RowDefinitions>

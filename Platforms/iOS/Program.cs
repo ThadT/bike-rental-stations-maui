@@ -1,7 +1,7 @@
 ﻿using ObjCRuntime;
 using UIKit;
 
-namespace BikeRentalStations;
+namespace BikeAvailability;
 
 public class Program
 {

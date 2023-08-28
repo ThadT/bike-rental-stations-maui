@@ -4,18 +4,24 @@ using Esri.ArcGISRuntime.RealTime;
 using System.Diagnostics;
 using System.Text.Json;
 
-namespace BikeRentalStations;
+namespace BikeAvailability;
 
 internal class CityBikesDataSource : DynamicEntityDataSource
 {
+    // Timer to request updates at a give interval.
     private readonly IDispatcherTimer _checkBikesTimer = Application.Current.Dispatcher.CreateTimer();
+    // REST endpoint for one of the cities described by the CityBikes API (http://api.citybik.es/).
     private readonly string _cityBikesUrl;
+    // Dictionary of previous observations for bike stations (to evaluate change in inventory).
     private readonly Dictionary<string, Dictionary<string, object>> _latestObservations = new();
 
     public CityBikesDataSource(string cityBikesUrl, int updateIntervalSeconds)
     {
+        // Store the timer interval (how often to request updates from the URL).
         _checkBikesTimer.Interval = TimeSpan.FromSeconds(updateIntervalSeconds);
+        // URL for a specific city's bike rental stations.
         _cityBikesUrl = cityBikesUrl;
+        // Set the function that will run at each timer interval.
         _checkBikesTimer.Tick += (s, e) => PullBikeUpdates();
     }
 
@@ -32,7 +38,9 @@ internal class CityBikesDataSource : DynamicEntityDataSource
 
     protected override Task OnDisconnectAsync()
     {
+        // Stop the timer (suspend update requests).
         _checkBikesTimer.Stop();
+        // Clear the dictionary of previous observations.
         _latestObservations.Clear();
 
         return Task.CompletedTask;
@@ -69,15 +77,17 @@ internal class CityBikesDataSource : DynamicEntityDataSource
 
     private async void PullBikeUpdates()
     {
+        // Exit if disconnected.
         if (this.ConnectionStatus == ConnectionStatus.Disconnected) { return; }
 
         try
         {
+            // Get a JSON response from the REST service.
             var client = new HttpClient();
             HttpResponseMessage response = await client.GetAsync(new Uri(_cityBikesUrl));
             if (response.IsSuccessStatusCode)
             {
-                // Get a response with the JSON for this bike network (including all stations).
+                // Read the JSON response for this bike network (including all stations).
                 var cityBikeJson = await response.Content.ReadAsStringAsync();
 
                 // Get the "stations" portion of the JSON and deserialize the list of stations.
@@ -87,8 +97,10 @@ internal class CityBikesDataSource : DynamicEntityDataSource
                 var bikeUpdates = JsonSerializer.Deserialize<List<BikeStation>>(stationsJson);
 
                 var totalInventoryChange = 0;
+                // Iterate the info for each station.
                 foreach (var update in bikeUpdates)
                 {
+                    // Build a dictionary of attributes from the response.
                     var attributes = new Dictionary<string, object>
                     {
                         { "StationID", update.StationInfo.StationID },
@@ -104,8 +116,10 @@ internal class CityBikesDataSource : DynamicEntityDataSource
                         { "InventoryChange", 0 },
                         { "ImageUrl", "https://static.arcgis.com/images/Symbols/Transportation/esriDefaultMarker_189.png" }
                     };
+                    // Create a map point from the longitude (x) and latitude (y) values.
                     var location = new MapPoint(update.Longitude, update.Latitude, SpatialReferences.Wgs84);
 
+                    // Get the last set of values for this station (if they exist).
                     _latestObservations.TryGetValue(attributes["StationID"].ToString(), out Dictionary<string, object> lastObservation);
                     if (lastObservation is not null)
                     {
