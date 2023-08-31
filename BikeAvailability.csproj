@@ -51,6 +51,10 @@
 	</ItemGroup>
   
 	<ItemGroup>
+	  <Compile Remove="Model\Favorite.cs" />
+	</ItemGroup>
+  
+	<ItemGroup>
 	  <Compile Update="FavoritesPage.xaml.cs">
 	    <DependentUpon>FavoritesPage.xaml</DependentUpon>
 	  </Compile>

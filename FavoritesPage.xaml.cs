@@ -1,4 +1,5 @@
 using BikeAvailability.ViewModel;
+using Esri.ArcGISRuntime.RealTime;
 
 namespace BikeAvailability;
 
@@ -15,7 +16,7 @@ public partial class FavoritesPage : ContentPage
     {
         var stationButton = sender as Button;
 
-        if (stationButton.BindingContext is Favorite fav)
+        if (stationButton.BindingContext is DynamicEntity fav)
         {
             Dictionary<string, object> mapParams = new()
             {

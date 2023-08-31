@@ -3,9 +3,10 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
              x:Class="BikeAvailability.FavoritesPage"
              Title="Favorites">
-        <CollectionView x:Name="FavoritesList"
+    <Grid>
+    <CollectionView x:Name="FavoritesList"
                         SelectionMode="Single"
-                        HeightRequest="600"
+                        HeightRequest="800" HorizontalOptions="Start" VerticalOptions="Start"
                         ItemsSource="{Binding FavoriteList}">
         <CollectionView.ItemTemplate>
                 <DataTemplate>
@@ -22,32 +23,33 @@
                             <ColumnDefinition Width="88" />
                         </Grid.ColumnDefinitions>
                         <Image Grid.Row="1" Grid.RowSpan="3"
-                               Source="{Binding ImageUrl}"
+                               Source="{Binding Attributes[ImageUrl]}"
                                Margin="0,-22,0,0"
                                Aspect="AspectFill"
                                HeightRequest="50"
                                WidthRequest="50" />
                         <Button Grid.Column="0" Grid.ColumnSpan="3"
-                               Text="{Binding Name}"
+                               Text="{Binding Attributes[StationName]}"
                                MinimumWidthRequest="300"
                                FontAttributes="Bold"
                                 Clicked="StationClicked"/>
                         <Label Grid.Row="1" Grid.Column="1" Grid.ColumnSpan="2"
                                Margin="20,2"
-                               Text="{Binding AvailableBikes, StringFormat='Bikes:     {0}'}" />
+                               Text="{Binding Attributes[BikesAvailable], StringFormat='Bikes:     {0}'}" />
                         <Label Grid.Row="2" Grid.Column="1" Grid.ColumnSpan="2" 
                                Margin="20,2"
-                               Text="{Binding AvailableEBikes, StringFormat='E-Bikes:  {0}'}" />
+                               Text="{Binding Attributes[EBikesAvailable], StringFormat='E-Bikes:  {0}'}" />
                         <Label Grid.Row="3" Grid.Column="0" Grid.ColumnSpan="2" 
                                Margin="2,7"
-                               Text="{Binding LastUpdated, StringFormat = 'Updated {0:h:mm:ss tt}'}"
+                               Text="{Binding Attributes[TimeStamp], StringFormat = 'Updated {0:h:mm:ss tt}'}"
                                FontAttributes="Italic" />
                         <Label Grid.Row="3" Grid.Column="2" 
                                Margin="2,7"
-                               Text="{Binding InventoryChange, StringFormat='Change: {0}'}"
+                               Text="{Binding Attributes[InventoryChange], StringFormat='Change: {0}'}"
                                FontAttributes="Bold" />
                     </Grid>
                 </DataTemplate>
             </CollectionView.ItemTemplate>
         </CollectionView>
+    </Grid>
 </ContentPage>
