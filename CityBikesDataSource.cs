@@ -12,15 +12,14 @@ internal class CityBikesDataSource : DynamicEntityDataSource
     private readonly IDispatcherTimer _getBikeUpdatesTimer = Application.Current.Dispatcher.CreateTimer();
     // REST endpoint for one of the cities described by the CityBikes API (http://api.citybik.es/).
     private readonly string _cityBikesUrl;
-    // Name of the city.
-    private readonly string _cityName;
     // Dictionary of previous observations for bike stations (to evaluate change in inventory).
     private readonly Dictionary<string, Dictionary<string, object>> _previousObservations = new();
+    // Name of the city.
+    private readonly string _cityName;
     // Timer and related variables used to display observations at a consitent interval.
     private readonly IDispatcherTimer _addBikeUpdatesTimer = Application.Current.Dispatcher.CreateTimer();
     private readonly List<Tuple<MapPoint, Dictionary<string, object>>> _currentObservations = new();
     private readonly bool _showSmoothUpdates;
-    private int _updatesPerSecond;
 
     public CityBikesDataSource(string cityName, string cityBikesUrl,
         int updateIntervalSeconds, bool smoothUpdateDisplay = true)
@@ -35,10 +34,10 @@ internal class CityBikesDataSource : DynamicEntityDataSource
         _getBikeUpdatesTimer.Tick += (s, e) => _ = PullBikeUpdates();
         // Store whether updates should be shown consitently over time or when the first arrive.
         _showSmoothUpdates = smoothUpdateDisplay;
-        if(smoothUpdateDisplay)
+        if (smoothUpdateDisplay)
         {
-            _addBikeUpdatesTimer.Interval = TimeSpan.FromSeconds(3);
-            _addBikeUpdatesTimer.Tick += (s,e) => AddBikeObservations();
+            // _addBikeUpdatesTimer.Interval = TimeSpan.FromSeconds(3);
+            _addBikeUpdatesTimer.Tick += (s, e) => AddBikeObservations();
         }
     }
 
@@ -97,22 +96,22 @@ internal class CityBikesDataSource : DynamicEntityDataSource
         // Exit if the data source is not connected.
         if (this.ConnectionStatus != ConnectionStatus.Connected) { return; }
 
-        // Stop the timer that adds observations while getting updates.
-        _addBikeUpdatesTimer.Stop();
-
-        // If showing consistent updates, process any remaining ones from the last update.
-        if(_showSmoothUpdates)
-        {
-            for (int i = _currentObservations.Count - 1; i > 0; i--)
-            {
-                var obs = _currentObservations[i];
-                AddObservation(obs.Item1, obs.Item2);
-                _currentObservations.Remove(obs);
-            }
-        }
-
         try
         {
+            // Stop the timer that adds observations while getting updates.
+            _addBikeUpdatesTimer.Stop();
+
+            // If showing consistent updates, process any remaining ones from the last update.
+            if (_showSmoothUpdates)
+            {
+                for (int i = _currentObservations.Count - 1; i > 0; i--)
+                {
+                    var obs = _currentObservations[i];
+                    AddObservation(obs.Item1, obs.Item2);
+                    _currentObservations.Remove(obs);
+                }
+            }
+
             // Call a function to get a set of bike stations (locations and attributes).
             var bikeUpdates = await GetDeserializedCityBikeResponse();
             var updatedStationCount = 0;
@@ -159,14 +158,23 @@ internal class CityBikesDataSource : DynamicEntityDataSource
             }
 
             // If showing consistent updates, set up the timer for adding observations to the data source.
-            if(_showSmoothUpdates)
+            if (_showSmoothUpdates)
             {
-                _updatesPerSecond = (int)Math.Ceiling(_currentObservations.Count / _getBikeUpdatesTimer.Interval.TotalSeconds);
-                _addBikeUpdatesTimer.Start();
-                Debug.WriteLine($"**** Stations from this update = {updatedStationCount}, total to process = {_currentObservations.Count}");
+                if (_currentObservations.Count > 0)
+                {
+                    var updatesPerSecond = (int)Math.Ceiling(_currentObservations.Count / _getBikeUpdatesTimer.Interval.TotalSeconds);
+                    if (updatesPerSecond > 0)
+                    {
+                        long ticksPerUpdate = 10000000 / updatesPerSecond;
+                        _addBikeUpdatesTimer.Interval = TimeSpan.FromTicks(ticksPerUpdate);
+                        _addBikeUpdatesTimer.Start(); // Tick event will add one update.
+                    }
+
+                    Debug.WriteLine($"**** Stations from this update = {updatedStationCount}, total to process = {_currentObservations.Count}");
+                }
             }
 
-            Debug.WriteLine($"Total inventory change: {totalInventoryChange} for {updatedStationCount} stations");
+            Debug.WriteLine($"**** Total inventory change: {totalInventoryChange} for {updatedStationCount} stations");
         }
         catch (Exception ex)
         {
@@ -176,13 +184,11 @@ internal class CityBikesDataSource : DynamicEntityDataSource
 
     private void AddBikeObservations()
     {
-        // Add a subset of the last observations received from the service.
-        // This provides a more consistent view of the updates coming in.
-        var updatesToAdd = Convert.ToInt16(_addBikeUpdatesTimer.Interval.TotalSeconds) * _updatesPerSecond;
-        var updatesLeft = _currentObservations.Count;
-        for (int i = updatesLeft-1; i > (updatesLeft-updatesToAdd) && i > 0; i--)
+        // Add one observation on the timer interval.
+        // The interval was determined to spread these additions over the span required to get the next updates.
+        if (_currentObservations.Count > 0)
         {
-            var obs = _currentObservations[i];
+            var obs = _currentObservations[^1];
             AddObservation(obs.Item1, obs.Item2);
             _currentObservations.Remove(obs);
         }

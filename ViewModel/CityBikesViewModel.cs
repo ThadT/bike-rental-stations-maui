@@ -146,15 +146,15 @@ public partial class CityBikesViewModel : ObservableObject
         // Listen for dynamic entities being created, calculate the initial bike inventory.
         _cityBikesDataSource.DynamicEntityReceived += (s, e) => CreateTotalBikeInventory(e.DynamicEntity);
 
-        // Listen for new observations; flash the station and update inventory if there's an update.
-        _cityBikesDataSource.DynamicEntityObservationReceived += async (s, e) =>
-        {
-            var bikesAdded = (int)e.Observation.Attributes["InventoryChange"];
-            if (bikesAdded == 0) { return; }
+    // Listen for new observations; flash the station and update inventory if there's an update.
+    _cityBikesDataSource.DynamicEntityObservationReceived += async (s, e) =>
+    {
+        var bikesAdded = (int)e.Observation.Attributes["InventoryChange"];
+        if (bikesAdded == 0) { return; }
 
-            UpdateBikeInventory(bikesAdded); // note: this might be negative if more bikes were taken than returned.
-            await Task.Run(() => FlashDynamicEntityObservationAsync(e.Observation.Geometry as MapPoint, bikesAdded > 0));
-        };
+        UpdateBikeInventory(bikesAdded); // note: this might be negative if more bikes were taken than returned.
+        await Task.Run(() => FlashDynamicEntityObservationAsync(e.Observation.Geometry as MapPoint, bikesAdded > 0));
+    };
 
         // Remove the existing dynamic entity layer from the map.
         Map.OperationalLayers.Remove(_dynamicEntityLayer);
@@ -287,7 +287,7 @@ public partial class CityBikesViewModel : ObservableObject
     {
         BikesAvailable += inventoryChange;
         BikesOut = TotalBikes - BikesAvailable;
-        PercentBikesAvailable = BikesAvailable / TotalBikes;
+        PercentBikesAvailable = (double)BikesAvailable / TotalBikes;
     }
 
     private async Task FlashDynamicEntityObservationAsync(MapPoint point, bool bikeAdded)
