@@ -1,8 +1,8 @@
-using BikeRentalStations.ViewModel;
+using BikeAvailability.ViewModel;
 using Esri.ArcGISRuntime;
 using Esri.ArcGISRuntime.Security;
 
-namespace BikeRentalStations;
+namespace BikeAvailability;
 
 public static class MauiProgram
 {
@@ -39,7 +39,6 @@ public static class MauiProgram
                 .UseDefaultChallengeHandler() // Use the default authentication dialog
               )
             );
-
         builder.Services.AddSingleton<CityBikesViewModel>();
         builder.Services.AddSingleton<MainPage>();
         builder.Services.AddSingleton<FavoritesPage>();
